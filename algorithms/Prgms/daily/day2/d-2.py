@@ -1,3 +1,5 @@
+# https://school.programmers.co.kr/learn/challenges/training?order=acceptance_asc&statuses=unsolved&languages=python3
+#
 # def solution(array):
 #     count_list = [0] * (max(array) + 1)  # index 값으로 최빈값을 구하기
 #

@@ -1,3 +1,6 @@
+# https://school.programmers.co.kr/learn/challenges/training?order=acceptance_asc&statuses=unsolved&languages=python3
+
+
 def solution(num1, num2):
 
     answer = num1%num2  #  나머지를 구하는 함수
