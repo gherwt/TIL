@@ -16,8 +16,4 @@ def solution(numLog):  # 숫자의 기록을 보고 글자를 도출하는 문�
     return answer
 
 
-
-
-
-
 print(solution([0, 1, 0, 10, 0, 1, 0, 10, 0, -1, -2, -1]))  # "wsdawsdassw"
