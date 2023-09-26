@@ -10,7 +10,7 @@
 
 
 ```
-{% extends "base.html" %} 
+{% extends "base.html" %}  -> base 에서 받아오겠다.
 
 {% block content %}
 
@@ -21,11 +21,12 @@
 
 #### templates 추가 설정(base.html 설정)
 
-django 는 기본적으로 settings/installed_apps 내부의 templates 폴더를 찾는다.
+- django 는 기본적으로 settings/installed_apps 내부의 templates 폴더를 찾는다.
 
-우리는 추가적으로 다른 폴더도 찾아달라고 설정해야 한다.
+- 그렇기 때문에 우리는 추가적으로 다른 폴더도 찾아달라고 설정해야 한다.
 
-1. Dirs :[] 내부에 BASE_DIR/'templates 를 따로 입력해줘야한다.
+
+##### 1. Dirs :[__] 내부에 BASE_DIR/'templates 를 따로 입력해줘야한다.
 
 ```
 TEMPLATES = [
@@ -42,9 +43,9 @@ TEMPLATES = [
 
 ```
 
-2. app 내의 templates 폴더를 다시 설정해줘야 한다. templates의 함정
+##### 2. app 내의 templates 폴더를 다시 설정해줘야 한다. templates의 함정
 
-> /01_form/fake/templates/fake 
+`/01_form/fake/templates/fake `
 
 -  templates를 찾을 때 installed app 의 모든 templates 폴더들을 순차적으로 찾는다. 그렇기 때문에 정확히 설정해줘야 한다.
 
@@ -53,24 +54,21 @@ TEMPLATES = [
 - templates 폴더 내에 다시 app 이름으로 된 폴더를 생성
 
 
-3. views 에 입력된 html 주소값을 바꿔줘야 한다.
+##### 3. views 에 입력된 html 주소값을 바꿔줘야 한다.
 
 ```
-
 def hello(request):
     
     return render(request, **'User_input/hello.html'**, 
                          ## 이와 같이 경로를 추가 설정해줘야 한다.
     
     {'message': message,})
-
-
-
 ```
 
 
 #### 이러한 base templates 를 사용하는 이유
 
+위와 같은 사이트 설정을 해줄 수 있어서 base 를 쓰면 효율성이 증가. 메인 페이지로 복귀 쉽게
 
 ```
     <nav>
@@ -81,8 +79,6 @@ def hello(request):
         </ul>
     </nav>
 ```
- 
-위와 같은 사이트 설정을 해줄 수 있어서 base 를 쓰면 효율성이 증가.
 
 
 
@@ -91,12 +87,12 @@ def hello(request):
 
 #### Url 에서 직접 input 하기
 
-```
-path('hello/<str:name>/', views.hello) 
+
+`path('hello/<str:name>/', views.hello) `
 
 -> path url 에서 직접 input 값을 받을 수 있다.
 
-
+```
 def hello(request, name): 
 -> 이렇게 받아줘야 한다. 직접 받는 것이기 때문에 2개의 값이 생성되기 때문이다.
 
@@ -118,17 +114,16 @@ def hello(request, name):
 <h1>{{ message }}</h1> # 위에서 f'string 해준 값이 반환된다
 
 {% endblock content %}
-
 ```
 
 
-#### 이제 form 을 활용한 input 하기 (중요 부분)
+### 이제 form 을 활용한 input 하기 (중요 부분)
 
-- <form> 태그
+- `<form>` 태그
   
     사용자가 입력한 정보를 서버로 전송할 때 사용하는 태그이다. 어디로 보낼 지는 action 속성을 통해 작성한다.
 
-1. input 을 위한 ping 을 설정한다.
+#### 1. input 을 위한 ping 을 설정한다.
 
 ```
 def ping(request):
@@ -162,7 +157,7 @@ def ping(request):
 </form>
 ```
 
-2. input 한 값을 받는 pong 을 설정해보자
+#### 2. input 한 값을 받는 pong 을 설정해보자
 
 pong의 view에서 ping으로부터 받은 자료를 request.GET을 활용해서 반환한다.
 ```
