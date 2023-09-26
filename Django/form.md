@@ -25,13 +25,13 @@ django 는 기본적으로 settings/installed_apps 내부의 templates 폴더를
 
 우리는 추가적으로 다른 폴더도 찾아달라고 설정해야 한다.
 
-1. dirs :[] 내부에 BASE_DIR/'templates 를 따로 입력해줘야한다.
+1. Dirs :[] 내부에 BASE_DIR/'templates 를 따로 입력해줘야한다.
 
 ```
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-------> 'DIRS': [BASE_DIR/'templates'],
+        'DIRS': `[BASE_DIR/'templates']`, <------ 여기에 설정 
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -125,6 +125,7 @@ def hello(request, name):
 #### 이제 form 을 활용한 input 하기 (중요 부분)
 
 - <form> 태그
+  
     사용자가 입력한 정보를 서버로 전송할 때 사용하는 태그이다. 어디로 보낼 지는 action 속성을 통해 작성한다.
 
 1. input 을 위한 ping 을 설정한다.
