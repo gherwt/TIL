@@ -4,10 +4,9 @@
 #### 기본 html 설정 가능
 
 
-```
-{% block content %}{% endblock content  %}
-```
+`{% block content %}{% endblock content  %}`
 
+이 block 안에 내용을 넣겠다
 
 ```
 {% extends "base.html" %}  -> base 에서 받아오겠다.
@@ -21,12 +20,12 @@
 
 #### templates 추가 설정(base.html 설정)
 
-- django 는 기본적으로 settings/installed_apps 내부의 templates 폴더를 찾는다.
+- django 는 기본적으로 `settings/installed_apps` 내부의 `templates` 폴더를 찾는다.
 
 - 그렇기 때문에 우리는 추가적으로 다른 폴더도 찾아달라고 설정해야 한다.
 
 
-##### 1. Dirs :[__] 내부에 BASE_DIR/'templates 를 따로 입력해줘야한다.
+##### 1. Dirs :[__] 내부에 `BASE_DIR/'templates` 를 따로 입력해줘야한다.
 
 ```
 TEMPLATES = [
@@ -47,7 +46,7 @@ TEMPLATES = [
 
 `/01_form/fake/templates/fake `
 
--  templates를 찾을 때 installed app 의 모든 templates 폴더들을 순차적으로 찾는다. 그렇기 때문에 정확히 설정해줘야 한다.
+-  templates를 찾을 때 `installed app` 의 `모든 templates` 폴더들을 `순차적`으로 찾는다. 그렇기 때문에 정확히 설정해줘야 한다.
 
 - 프로젝트 -> app -> templates 폴더 생성
 
@@ -159,7 +158,8 @@ def ping(request):
 
 #### 2. input 한 값을 받는 pong 을 설정해보자
 
-pong의 view에서 ping으로부터 받은 자료를 request.GET을 활용해서 반환한다.
+pong의 view에서 ping으로부터 받은 자료를 `request.GET`을 활용해서 반환한다.
+
 ```
 def pong(request):
     username = request.GET['username']  ## request 받은 모든 값을 의미한다. 
