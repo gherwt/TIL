@@ -24,8 +24,8 @@ def solution(a, b, c, d):
         return min(nums)
 
 
-# print(solution(2, 2, 2, 2))  # 2222
-# print(solution(4, 1, 4, 4))  # 1681
-# print(solution(6, 3, 6, 3))  # 27
+print(solution(2, 2, 2, 2))  # 2222
+print(solution(4, 1, 4, 4))  # 1681
+print(solution(6, 3, 6, 3))  # 27
 print(solution(2, 5, 2, 6))  # 30
-# print(solution(6, 4, 2, 5))  # 2
+print(solution(6, 4, 2, 5))  # 2
