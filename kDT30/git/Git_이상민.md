@@ -90,7 +90,7 @@ commit을 위한 stage
 - `git add . `: 현재 폴더의 모든 변경 사항 stage
 
 
-### (4) `git comit -m "커밋 메시지"`
+### (4) `git commit -m "커밋 메시지"`
 > commit == 버전을 생성 == 현재 상태의 스냅샷 촬영
 
 - 처음으로 commit을 할 경우,
@@ -124,7 +124,6 @@ commit을 위한 stage
   # Changes to be committed:
   #       new file:   test.txt
   ```
-
 
 ### (5) `git config`
 
