@@ -87,7 +87,7 @@ def bf(start):
             if dist[cur] != INF and dist[next_node] > dist[cur] + cost:
                 dist[next_node] = dist[cur] + cost
 
-                # n번째 라운드에서도 값이 갱신된다면 음수 순환이 존재
+                # n번째 라운드에서도 값이 갱신된다면 음수 순환이 존재 -> 최소값이 여전히 존재한다. 범위를 초과해서 수행했다.
                 if i == n-1:
                     return True
     return False
