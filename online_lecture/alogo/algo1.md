@@ -1,4 +1,5 @@
 비밀번호: algory@algory
+코드: https://cafe.naver.com/algorystudy
 
 파이썬 : 리스트(list) --> 배열(Array)
 
@@ -15,11 +16,19 @@
         마지막 노드? Link == none
     - 원형 연결 리스트: 마지막 노드 link == head
 
-  - 스택
-
+  - 스택 : 한쪽 막힌 파이프, FIFO(= LILO), push(), pop(), top......
+    isStackFull()? top == SIZE-1
+    isStackEmpty()? top == -1
+    실무 : 함수호출 A() push/pop -> B () push/pop --> C() --> D() return
+    괄호검사: ((()())))  스택: error
+ 
   - 큐
-    - 순차 큐(= 일반 큐)
-    - 원형 큐(= 환형 큐)
+    - 순차 큐(= 일반 큐) : 양쪽 뚫린 파이프, FIFO(= LILO), enQueue(),  deQueue(), front, rear
+      isQueueEmpty: front == rear
+      isQueueFull: rear == size -1 --> 개선(3가지), 오버헤드()
+    - 원형 큐(= 환형 큐) : 꼬리가 다시 머리로 연결되는 큐.
+      % SIZE => front = rear = 0, isQueueFull() : rear + 1 == front,
+      1칸 사용 못함(특징)
 
 - 비선형 자료구조
   
@@ -41,3 +50,15 @@
   - 이진 검색
 
 - 재귀 : 다양한 사례들이 존재한다.
+
+retData = numData[:]
+
+numData[:]: 이것은 numData의 얕은 복사본을 생성
+
+새로운 객체가 생성되고 해당 객체의 요소가 원본 객체와 동일하다는 것을 의미
+
+이진 탐색 트리;
+
+작은 값 왼쪽
+
+큰값 오른쪾
