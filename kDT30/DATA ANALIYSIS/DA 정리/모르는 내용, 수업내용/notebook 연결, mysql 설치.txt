@@ -1,0 +1,104 @@
+# 주피터 노트북 연결
+- 환경설정파일에서 세팅
+
+- 도커우분투인 경우
+vim ~/.bashrc
+export PYSPARK_DRIVER_PYTHON=jupyter
+export PYSPARK_DRIVER_PYTHON_OPTS='notebook'
+
+- aws에서 세팅
+export PYSPARK_DRIVER_PYTHON=jupyter
+export PYSPARK_DRIVER_PYTHON_OPTS='notebook' --ip 0.0.0.0 --port=본인포트(89본인lab번호)
+
+## log 정보 출력 생략하기
+pyspark : log 정보 pylog4j 프로세스 이용해서 기록 =>> spark log4j 와 연결이 됨
+
+log 설정 변경시 spark log4j 를 변경
+
+cd
+
+cd spark/conf
+ls
+
+cp log4j.properties.template log4j.properties
+
+log4j.properties 
+log4j.rootCategory = info,console 을
+log4j.rootCategory = WARN,console 로 변경해준다.
+esc :wq
+
+### 하둡의 hdfs(저장장치) 핸들링 명령어
+- 모든 명령어 : hdfs 로 시작, 그 뒤에 명령 내릴 객체 쓰고 그 뒤에 명령어를 쓴다.
+hdfs namenode -format : 하둡 핸들링 -> namenode 에 명령 -> format 이라는 명령어를
+
+- 하둡 저장장치 자체에 명령은 hdfs dfs
+- 하둡 datanode에 디렉터리생성
+hdfs dfs -mkdir 현재 디렉터리명
+- 하둡 database 의 현재 상황
+
+hdfs dfs -put 원본파일 이동하고자하는 디렉터리
+
+
+
+
+### mysql 설치
+- 데이터 마트와 데이터 웨어하우스 endpoint 로 사용할 공간
+- 데이터 마트는 최종 저장공간 : 서비스와 직접 연결된 공간(장고에 연결되는 db)
+- apt install 로 설치해야 함
+- 도커인 경우
+cd 
+apt-get update -y
+
+mysql 설치
+apt-get install mysql-server -y
+
+mysql 시작
+service mysql restart
+
+mysql 설정
+mysql_secure_installation
+
+- mysql 접속
+root password skipping 된 경우 : 안 만든 경우
+docker
+mysql -u root
+
+- root 는 원격접속 불가능
+- mysql 은 hadoop/spark 가 사용 : 접속은 ssh(원격을 사용)
+- 새로 user 생성해서 사용
+- spark 가 사용할 mysql user 생성
+- mysql 안에서 작업
+- 사용자 생성 명령
+
+mysql > create user bigMysql@'%' identified by 'bigMysql1234@';
+- 사용자 권한 설정 : 모든권한(*.*)
+
+mysql > grant all privileges on *.* to bigMysql@'%' with grant option;
+
+- 기본 database 생성
+if not exists: 데이터 베이스가 없으면
+create database if not exists etlmysql;
+
+- mysql-dbjava 연결 : jdbc 설치 : 다른응용프로그램과 db 서버러를 연결해주는 역할을 함
+- jdbc 다운 : os 버전에 맞게 다운해야 함, db 종류에 맞게 다운
+- wget https://dev.mysql.com/get/Downloads/Connector-J/mysql-connector-java_8.0.29-1ubuntu20.04_all.deb
+
+fred api 키 : 07114167b97b862d19f51f3c11c64fd6
+
+복사
+
+### data 준비
+- fred api 키 생성
+- 필요 패키지 install
+pip install fredapi
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,209 @@
+### 하둡 설치
+
+- 환경 : 도커
+- os(운영체제) : ubuntu 20.04 리눅스
+- tip. 
+- 우분투 최상위계정 : root
+- 설치계정 : ubuntu
+- ubuntu 계정으로 aws에서는 apt install(설치)이 가능함
+- 일반 계정(labxx 계정일 때) 일반 패키지 설치 : pip install
+
+## 설치과정(관리자계정)
+sudo apt update -y
+sudo apt upgrade -y
+
+### wget, vim, unzip, sudo 모듈 설치
+- 주피터 노트북 설치하면서 설치함
+- wget : 파일 다운 프로그램
+- apt install wget vim unzip sudo -y 
+
+### 하둡 계정 생성(root는 사용 계정이 될 수 없음)
+adduser big
+password big
+
+### java/ssh 하둡 의존 패키지 설치
+- java 는 일반계정에서 하둡용으로 설치
+wget https://corretto.aws/downloads/latest/amazon-corretto-11-x64-linux-jdk.tar.gz
+- 압축풀기
+tar xvzf amazon-corretto-11-x64-linux-jdk.tar.gz
+- java 설치 디렉터리 이름이 길어서 바로가기(심볼릭링크) - 별명을 생성
+- java 버전에 따라서 디렉터리명이 달라지므로 버전 확인하고 진행하기
+ln -s amazon-corretto-11-x64-linux-jdk.tar.gz
+- 링크 잘못생성했을 경우
+- unlink java 진행 후에 다시 생성
+
+- ssh 설치
+apt-get install ssh
+
+- ssh 통신키(public)
+ssh-keygen -t rsa -P '' -f ~/.ssh/id_rsa
+
+ssh-keygen : 인증키 생성 명령어
+-t : 암호종류, rsa방식의 암호
+-p : 패스워드 '' -> 패스워드 사용 x
+-f : 키 파일 저장경로 ~/.ssh/id_rsa
+- 생성키 중에 퍼블릭키(.pub)를 authorized_keys에 append
+cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
+
+- 하둡 다운로드
+wget https://dlcdn.apache.org/hadoop/common/hadoop-3.3.5/hadoop-3.3.5.tar.gz
+
+- 하둡 압축풀기
+tar xvzf hadoop-3.3.5.tar.gz
+
+- 바로가기 생성
+ln -s hadoop-3.3.5 hadoop
+
+- hadoop 설정(기본설정)
+- java가 어디있는지 알려줘야 함
+- 계정의 홈으로 이동 : cd
+- 현재 사용자의 환경파일을 활용 java 설정
+- 환경설정파일 열기 vim ~/.bashrc
+
+export JAVA_HOME=/root/java 
+export PATH=$PATH:$JAVA_HOME/bin
+export HADOOP_HOME=/root/hadoop
+export HADOOP_CONF_DIR=$HADOOP_HOME/etc/hadoop
+export PATH=$PATH:$HADOOP_HOME/bin
+export PATH=$PATH:$HADOOP_HOME/sbin
+
+esc :wq
+
+- 환경변수 반영하기
+source ~/.bashrc
+
+- 하둡에서 필요한 폴더 생성하기
+mkdir hadoop/temp
+mkdir hadoop/pids
+mkdir hadoop/namenode_dir
+mkdir hadoop/secondary_dir
+mkdir hadoop/datanode_dir
+mkdir hadoop/logs
+mkdir -p hadoop/yarn/logs
+mkdir -p hadoop/yarn/local
+
+
+### 하둡 클러스터 설정
+- 하둡 저장공간의 시스템(HDFS)
+- 싱글 클러스터 설정하기
+- core-site.xml 설정
+- $HADOOP_CONF_DIR 안에 해당 파일 저장되어 있음
+== ~/hadoop/etc/hadoop
+vim core-site.xml
+
+<configuration>
+	<property>
+		<name>fs.defaultFS</name>
+		<value>hdfs://localhost:9000</value>
+	</property>
+	<property>
+		<name>hadoop.http.cross-origin.enabled</name>
+		<value>true</value>
+	</property>
+	<property>
+		<name>hadoop.http.cross-origin.allowed-origins</name>
+		<value>*</value>
+	</property>
+	<property>
+		<name>hadoop.http.cross-origin.allowed-methods</name>
+		<value>GET,POST,HEAD</value>
+	</property>
+	<property>
+		<name>hadoop.http.cross-origin.allowed-headers</name>
+		<value>X-Requested-With,Content-Type,Accept,Origin</value>
+	</property>
+	<property>
+		<name>hadoop.http.cross-origin.max-age</name>
+		<value>1800</value>
+	</property>
+</configuration>
+
+
+
+- hdfs-site.xml (hdfs 시스템 관한 설정)
+- 생성해 놓은 디렉터리하고 node 와 연결해주는 설정
+- ~/$HADOOP_CONF_DIR 에 있음
+
+
+<configuration>
+	<property>
+		<name>dfs.replication</name>
+		<value>1</value>
+	</property>
+	<property>
+		<name>dfs.namenode.name.dir</name>
+		<value>/root/hadoop/namenode_dir</value>
+	</property>
+	<property>
+		<name>dfs.datanode.data.dir</name>
+		<value>/root/hadoop/datanode_dir</value>
+	</property>
+</configuration>
+
+
+- mapred-site.xml (자원 관리 기능)
+
+
+<configuration>
+	<property>
+		<name>mapreduce.framework.name</name>
+		<value>yarn</value>
+	</property>
+</configuration>
+
+- hdfs 포맷
+- namenode 포맷 :  hdfs namenode -format
+- datanode 포맷 : hdfs namenode -format
+
+- 에러발생 : user 등록
+
+cd
+vim ~/.bashrc
+
+export HDFS_NAMENODE_USER=root
+export HDFS_DATANODE_USER=root
+export HDFS_SECONDARYNAMENODE_USER=root
+export YARN_RESOURCEMANAGER_USER=root
+export YARN_NODEMANAGER_USER=root
+
+export JAVA_HOME=/root/java
+
+- 하둡실행
+
+1. ssh 실행
+service ssh start
+
+2. 파일시스템 실행
+start-dfs.sh
+
+3. yarn 실행
+start-yarn.sh
+	- start-all.sh 를 사용하면 모두 시작된다
+
+- 실행 확인(현재 실행중인 응용 ps를 확인 명령)
+jps
+
+- 종료
+stop-all.sh
+
+### 실행 중인 상태에서 format 을 하거나 다시 실행하면 에러가 발생함 -> 종료 후에 자겅ㅂ
+
+### 종료 후에 즉시 start 하면(20초 내) namenode 가 망가진다.
+	- namenode format : hdfs namenode -format 을 실행해서 수정을 할 수 있다.
+
+### datanode(jps 시 안 올라올 때, 안 보일 때) 가 망가졌을 시
+	- stop-all-sh 가 먼저 실행
+	- datanode 에서 사용하는 폴더를 삭제해주면 된다.
+	- ~/hadoop/datanode_dir (rm 으로 삭제) 후 다시 생성한다.
+	- 이 후 datanode 포맷 후 실행.
+
+
+
+
+
+
+
+
+
+
+
