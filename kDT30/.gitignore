@@ -1,3 +1,7 @@
 *.log
 **/.ipynb_checkpoints
 **/data
+**/test.csv
+**/train.csv
+**/catboost_info
+
