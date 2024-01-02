@@ -1,0 +1,140 @@
+### airflow 설치
+- airflow 설치 디렉터리를 생성 : ~/airflow
+- 계정별로 설치해야 한다.
+- airflow는 모듈화되어 있다 -> 설치는 pip를 이용한다.
+
+1. 관련 디렉터리를 생성
+- airflow 설치 디렉터리를 생성 : 디렉터리 명을 airflow 로 하는게 일반적임
+	- airflow 기능 관련 설치 디렉터리임
+- 스케쥴러 프로그램 관련 디렉터리 생성(디렉터리 명은 임의로 사용 가능하다)
+	- airflow conf 파일에 등록해야 한다.
+	- 현재 study 디렉터리로 생성되어 있다.
+	- study -> dags 디렉터리를 스케쥴러 관련 폴더로 사용한다
+	- dag : airflow 의 스케쥴러 프로그램을 의미함.
+		- airflow 수업은 dag 프로그램을 배운다는 것과 같은 의미이다.
+
+2. 환경변수설정
+### airflow home dir 관련설정/ version 관련 설정
+export AIRFLOW_HOME=~/airflow
+export AIRFLOW_VERSION=2.3.4
+
+
+### python 관련 환경변수 설정
+
+### python 명령어 -> python 3 명령어로 변경
+### python version 을 얻기 위한 변수 설정 
+export PYTHON_VERSION="$(python3 --version | cut -d " " -f 2 | cut -d "." -f 1-2)
+- airflow 설치시 필요한 파이썬의 verison을 추출하기 위한 변수
+python3 --version | cut -d " " -f 2 -> 터미널에서 python 의 버전만을 확인할 수 있다.
+python3 --version | cut -d " " -f 2 | cut -d "." -f 1-2 -> python의 버전 . 을 기준으로 분리하고 1, 2번째 것만 가져옴
+
+- airflow 다운경로
+export CONSTRAINT_URL="https://raw.githubusercontent.com/apache/airflow/constraints-${AIRFLOW_VERSION}/constraints-${PYTHON_VERSION}.txt"
+
+3. pip 이용해서 설치를 진행
+- 관련 소스는 github 으로 공개중 : constraint_url 에서 다운
+- airflow 버전/python 버전 명시해서 다운 후 설치
+pip install "apach-airflow==${AIRFLOW_VERSION}" --constraint "${CONSTRAINT_URL}"
+
+4. airflow 관련설정
+1) db 초기화
+- airflow 는 작업 스케쥴을 위해서 sqlite db를 구동 : db 초기화가 필요
+	- airflow 사용 시 문제가 있을 때 db 초기화 진행 (백업은 필수)
+
+- airflow db init 명령어로 초기화
+
+2) 관리자 계정 등록
+- airflow users create \
+    --username admin \
+    --firstname Peter \
+    --lastname Parker \
+    --role Admin \
+    --email spiderman@superhero.org
+- 비밀번호 입력필요
+
+3) airflow 스케쥴 프로그램 폴더 설정파일에 등록하기
+- ~/study>dags : dag 저장 폴더
+- airflow 설정 파일
+~/airflow/airflow.cfg
+(1) dags_folder 위치 확인 후 변경
+(2) example dags False 로 변경
+
+5. airflow 실행
+1) webserver : 관리툴(독립터미널)
+airflow webserver --port 8002
+
+2) 스케쥴러 실행 : 독립터미널
+airflow scheduler
+
+6. 설정 변경 등 재작업 후
+airflow db reset
+airflow db init
+# admin 다시 등록 필요할 수 있음
+airflow users create \
+    --username admin \
+    --firstname Peter \
+    --lastname Parker \
+    --role Admin \
+    --email spiderman@superhero.org
+
+######################################################################
+
+# 예제 dags
+
+######################################################################
+#hello_dag.py
+
+# 기본 import
+from datetime import timedelta # 작업 주기 설정을 위해 import 
+from datetime import datetime # 전체 작업 자동화 시작 시간 설정
+
+from airflow import DAG # DAG 인스턴트화에 사용하는 라이브러리
+
+# operator 사용위해 import
+from airflow.operators.bash_operator import BashOperator
+from airflow.utils.dates import days_ago
+
+#### 
+# 1. airflow 스케쥴 관련 파라미터 설정
+# 딕셔너리로 구성
+# airflow로 전달이 되어서 meta db로 사용되게 됨
+default_args = {
+	'owner' : 'airflow',
+	'depends_on_pas' : False,
+	'start_date' : datetime(2024, 1, 1),
+	'email' : ['메일주소'], # 관리자 메일주소 - 작업실패시 보고용임
+	'email_on_failure' : False, 
+	'email_on_retry' : False,
+	'retries' : 1, # 작업 실패 시 재시도 횟수
+	'retry_delay' : timedelta(minutes=5), # 재시도 기간(5분 후 재시도)
+	'end_date' : datetime(2024, 1, 5)  # 작업 종료
+}
+
+# 스케쥴 객체 생성 : DAG 모듈
+dag = DAG(
+	'helloworld', # 스케쥴 이름
+	default_args = default_args, # 기본 설정 파라미터
+	description = 'echo helloworld', # 스케쥴 설명문구
+	schedule_interval = timedelta(day=1), # 하루에 한 번씩 본 스케쥴 작업을 진행
+)
+
+# task 생성 - 실제 실행되어야 할 작업(dag 객체에 종속)
+# 객체 변수명 = operator 종류모듈(내용)
+# 종류모듈 : 터미널 명령어면 BashOperator / 코드직접실행 CodeOperator 사용
+# python 프로그램일시 BashOperator 를 사용
+t1 =  BashOperator(
+	task_id = '임의 task_id 명',
+	bash_command = '실행할 터미널 명령어',
+	dag = dag 객체명
+)
+
+t1 = BashOperator(
+    'task_id' = 'echo_hello',
+	bash_command = 'echo "Hello, world!"',
+	dag = dag
+)
+
+
+# 코드를 스케쥴러에 등록
+# 관리도구(web) 이용해서 실행 시작
+
