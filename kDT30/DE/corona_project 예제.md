@@ -126,7 +126,7 @@ def transform_data():
 # db에 저장하는 역할
 def dw_save():
     tm_data = transform_data()
-    tm_data.write.jdbc(url = JDBC['url'], table = 'CORONA_PATIENTS', properties =JDBC['props'])
+    tm_data.write.jdbc(url = JDBC['url'], table = 'CORONA_PATIENTS', mode = 'append', properties =JDBC['props'])
 
 if __name__ == '__main__':
     dw_save()
@@ -184,14 +184,28 @@ def get_spark_session():
 def find_data(config, table_name):
     return spark.read.jdbc(url=config['url'], table = table_name, properties = config['props'])
 
+
+def find_query(config, query_t):
+    spark_sc = get_spark_session
+    df = spark_sc.read.format('jdbc')\
+                  .option('url', config[0]['url'])\
+                  .option('drive', 'com.mysql.cj.jdbc.Driver')\
+                  .option('query', query_t)\
+                  .option('user', config[0]['props']['user'])\
+                  .option('password', config[0]['props']['password'])\
+                  .load()
+    return df
+
 # 전달된 db 를 db에 저장
 def save_data(config, df, table_name):
     return df.write.jdbc(url=config['url'], table = table_name, mode = 'append', properties = config['props'])
 
+# 코로나 현황과 인구의 관계
 def transdata_popPatients():
+    tmp_q = "select * from CORONA_PATIENTS where STD_DAY = '" + str(cal_std_day(365)) + "'"
     conf = create_conf()
     popu = find_data(conf[0], 'LOC')
-    patients = find_data(conf[0], 'CORONA_PATIENTS') 
+    patients = find_query(conf[0], tmp_q) 
 
     ## 면적대비 인구수와 코로나 현황
     pop_patients = popu.join(patients, on = 'LOC')\
@@ -205,7 +219,6 @@ def transdata_popPatients():
 
     # DM DB에 저장 - 테이블에 레코드가 insert 문
     save_data(conf[1], pop_patients,'CO_POPU_DENSITY')
-
 
 
 # 지역별 인구 10만명당 백신 접종률 계산
@@ -247,4 +260,59 @@ def transdata_vaccinePatient():
     # data 를 저장해준다.
     save_data(conf[1], co_vaccine, 'CO_VACCINE_THIRD')
     
+
+# 다중 이용시설과 코로나 확진자수 관계
+def transdata_FacPatient():
+    tmp_q = "select * from CORONA_PATIENTS where STD_DAY = '" + str(cal_std_day(365)) + "'"
+    conf = create_conf()
+    # 다중이용시설 data
+    facil = find_data(conf[0], 'LOC_FACILITY_CNT') 
+    # 코로나 확진자 data
+    patients = find_data(conf[0], 'CORONA_PATIENTS') 
+    # 인구 data
+    popu = find_data(conf[0], 'LOC')
+
+    # 인구 10만명 당 다중이용시설의 수
+    fac_popu = popu.join(facil, on = 'LOC')\
+            .select('LOC', ceil(facil.FAC_CNT/popu.POPULATION*100000).alias('FAC_POPU'))
+    co_facil = patients.join(fac_popu, on = 'LOC')\
+                    .select('LOC', 'FAC_POPU', 'QUR_RATE', 'STD_DAY')
+    # idx 컬럼추가
+    co_facil =  co_facil.withColumn('CF_IDX', monotonically_increasing_id())
+
+    save_data(conf[1], co_facil, 'CO_FACILITY')
+
+# 요일별 코로나 확진자수
+def transdata_weekPatient():
+    tmp_q = "select * from CORONA_PATIENTS where STD_DAY = '" + str(cal_std_day(365)) + "'"
+    conf = create_conf()
+    # 코로나 확진자 data
+    patients = find_data(conf[0], 'CORONA_PATIENTS')
+    # 기준일을 요일로 변환 : dayofweek()
+    week_p = patients.withColumn('DAY_OF_WEEK', dayofweek(col('STD_DAY')))
+    # 신규발생자 수를 요일별로 계산
+    week_p = week_p.groupby(week_p.DAY_OF_WEEK).agg(sum(col('LOC_OCC_CNT')).alias('patients'))
+    # 숫자로 된 요일을 문자로 변경해준다.
+    week_p = week_p.withColumn('DAY_OF_WEEK', when(week_p.DAY_OF_WEEK == 1, 'MON')
+                                        .when(week_p.DAY_OF_WEEK == 2, 'TUE')
+                                        .when(week_p.DAY_OF_WEEK == 3, 'WED')
+                                        .when(week_p.DAY_OF_WEEK == 4, 'THR')
+                                        .when(week_p.DAY_OF_WEEK == 5, 'FRI')
+                                        .when(week_p.DAY_OF_WEEK == 6, 'SAT')
+                                        .when(week_p.DAY_OF_WEEK == 7, 'SUN')
+                          )
+
+    # 피벗 테이블 형태로 바꿔준다.
+    pd_p = week_p.to_pandas_on_spark()
+    pd_p = pd_p.pivot_table(columns = 'DAY_OF_WEEK', values = 'patients')
+    week_p = pd_p.to_spark()
+    # week_p.withColumn('STD_DAY', current_date().cast('string')).show()
+    week_p = week_p.withColumn('STD_DAY', lit(cal_std_day(365)))
+    save_data(conf[1], week_p, 'CO_WEEKDAY')
+
+if __name__ == '__main__':
+    transdata_popPatient()
+    transdata_vaccinePatient()
+    transdata_FacPatient()
+    transdata_weekPatient()
 ```
