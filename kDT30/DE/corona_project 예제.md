@@ -93,8 +93,10 @@ def get_data(fileN) :
 
 
 # 현재 날짜로부터 before_day 만큼 이전의 날짜를 생성해주는 함수
-def cal_std_day(befor_day):
-    x = dt.datetime.now() - dt.timedelta(befor_day)
+# parm 을 2개 줘서 구할 수도 있다. 
+# 현재 날짜가 아닌 특정 날짜 사이의 값을 넣고 추출할 수도 있음.
+def cal_std_day(start):
+    x = dt.datetime.now() - dt.timedelta(start)
     year = x.year
     month = x.month if x.month >= 10 else '0'+ str(x.month)
     day = x.day if x.day >= 10 else '0'+ str(x.day)  
@@ -106,7 +108,7 @@ def transform_data():
     file_name = 'corona_patient_'+cal_std_day(365)+'.json' 
     # corona_extract.py 에서 기준일이 365로 설정되어 있기 때문임.
     data = []
-    co_p_json = get_data()
+    co_p_json = get_data(file_name)
     for rdd1 in co_p_json.select(co_p_json.items).toLocalIterator() : 
         for rdd2 in rdd1.items:
             data.append(rdd2)
@@ -188,11 +190,11 @@ def find_data(config, table_name):
 def find_query(config, query_t):
     spark_sc = get_spark_session
     df = spark_sc.read.format('jdbc')\
-                  .option('url', config[0]['url'])\
+                  .option('url', config['url'])\
                   .option('drive', 'com.mysql.cj.jdbc.Driver')\
                   .option('query', query_t)\
-                  .option('user', config[0]['props']['user'])\
-                  .option('password', config[0]['props']['password'])\
+                  .option('user', config['props']['user'])\
+                  .option('password', config['props']['password'])\
                   .load()
     return df
 
@@ -233,6 +235,11 @@ def transdata_vaccinePatient():
 
     # 백신 data 추출
     vaccine = find_data(conf[0], 'CORONA_VACCINE')
+   
+    vaccine = vaccine \
+        .withColumn("V_CNT" ,
+              vaccine["V_CNT"]
+              .cast(IntegerType()))
 
     ### Long 형 df => wide 형 df
     ### pivot 사용 : pandas df 로 변환
@@ -283,14 +290,19 @@ def transdata_FacPatient():
     save_data(conf[1], co_facil, 'CO_FACILITY')
 
 # 요일별 코로나 확진자수
+# 1. 특정일(corona_extract.py 에서 추출한 날짜) 코로나 발생 현황 data 추출
+# 2. dmdb의 CO_WEEKDAY tbl에서 가장 최근 기준일의 레코드를 추출
+# 3. 1번 데이터의 요일 결정 전국 코로나 증가현황을 계산
+# 4. 3번에서 계산한 특정 요일의 코로나 증가현황을 특정 요일의 기존 수와 더하기(특정요일 data 누적 증가)
 def transdata_weekPatient():
     tmp_q = "select * from CORONA_PATIENTS where STD_DAY = '" + str(cal_std_day(365)) + "'"
+    tmp_qd = 'select * from CO_WEEKDAY where std_day = (select max(std__day) from CO_WEEKDAY)"
     conf = create_conf()
     # 코로나 확진자 data
     patients = find_data(conf[0], 'CORONA_PATIENTS')
-    # 기준일을 요일로 변환 : dayofweek()
-    week_p = patients.withColumn('DAY_OF_WEEK', dayofweek(col('STD_DAY')))
-    # 신규발생자 수를 요일별로 계산
+    # 기준일을 요일로 변환 : dayofweek(), 요일결정
+    week_p = patients.withColumn('DAY_OF_WEEK', dayofweek(col('STD_DAY'))) 
+    # 신규발생자 수를 요일별로 계산, 전국 증가 현황 계산
     week_p = week_p.groupby(week_p.DAY_OF_WEEK).agg(sum(col('LOC_OCC_CNT')).alias('patients'))
     # 숫자로 된 요일을 문자로 변경해준다.
     week_p = week_p.withColumn('DAY_OF_WEEK', when(week_p.DAY_OF_WEEK == 1, 'MON')
@@ -299,16 +311,28 @@ def transdata_weekPatient():
                                         .when(week_p.DAY_OF_WEEK == 4, 'THR')
                                         .when(week_p.DAY_OF_WEEK == 5, 'FRI')
                                         .when(week_p.DAY_OF_WEEK == 6, 'SAT')
-                                        .when(week_p.DAY_OF_WEEK == 7, 'SUN')
-                          )
+                                        .when(week_p.DAY_OF_WEEK == 7, 'SUN'))
+    # week.show() # 요일별 발생현황 table
+    # week_p.show() # 특정날짜의 발생현황
+
+    # 특정 요일을 추출 - 4번 코드
+    tmp_col = week_p.select(week_p.DAY_OF_WEEK).collect()[0][0]
+    # print(tmp_col) # 요일 data 추출한다.
+    # 위에서 추출한 요일의 data 를 week에서 추출
+    tmp_val = week.select(tmp_col).collect()[0][0] + week.p.select('patients').collect()[0][0]
+    # 위에서 계산한 수치를 tmp_col 요일에 반영한다.
+    week = week.withcolumn(tmp_col, lit(tmp_val)) # 기준 컬럼 변경
+    # print(tmp_val)
 
     # 피벗 테이블 형태로 바꿔준다.
-    pd_p = week_p.to_pandas_on_spark()
-    pd_p = pd_p.pivot_table(columns = 'DAY_OF_WEEK', values = 'patients')
-    week_p = pd_p.to_spark()
+    # pd_p = week_p.to_pandas_on_spark()
+    # pd_p = pd_p.pivot_table(columns = 'DAY_OF_WEEK', values = 'patients')
+    # week_p = pd_p.to_spark()
+
     # week_p.withColumn('STD_DAY', current_date().cast('string')).show()
-    week_p = week_p.withColumn('STD_DAY', lit(cal_std_day(365)))
-    save_data(conf[1], week_p, 'CO_WEEKDAY')
+    week = week.withColumn('STD_DAY', lit(cal_std_day(365)))
+    # week_p = week_p.withColumn('STD_DAY', lit(cal_std_day(365)))
+    save_data(conf[1], week, 'CO_WEEKDAY')
 
 if __name__ == '__main__':
     transdata_popPatient()

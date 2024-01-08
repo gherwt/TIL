@@ -28,6 +28,7 @@ from airflow.operators.bash import BashOperator
 
 # 스케쥴(DAG)
 # with ~ as 구문 사용
+# project dag 1 ~ 3 으로 3번 설정 가능
 
 with DAG(
     dag_id = 'corona_etl_v2',
@@ -74,7 +75,7 @@ with DAG(
     },
     description = 'corona etl pipline',
     schedule_interval = timedelta(days=1),
-    start_date = datetime(2024, 1, 5, 13, 00),
+    start_date = datetime(2024, 1, 8, 13, 00),
     catchup = False, # 문법적 오류 등으로 실행되지 않는 DAG 를 다시 실행할 것인지 여부
     tags = ['corona_etl_fin']
 
